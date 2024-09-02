@@ -1,0 +1,519 @@
+
+---
+title: "Introdução à Análise de Componentes Principais (PCA) no R usando o Google Colab"
+author: "Edgar de Souza Vismara"
+date: last-modified
+date-format: "DD-MM-YYYY"
+description: "Este minicurso tem como objetivo introduzir os conceitos teóricos e práticos da Análise de Componentes Principais (PCA) e capacitar os participantes a aplicar essa técnica utilizando o R em um ambiente colaborativo."
+title-block-banner: "#d3d3d3"
+format: 
+  html:
+    embed-resources: true
+    smooth-scroll: true
+    theme: cosmo
+    fontcolor: black
+    toc: true
+    toc-location: left
+    toc-title: Sumário
+    toc-depth: 3
+css: style.css
+---
+
+
+
+
+### **Parte 1: Teoria da Análise de Componentes Principais (PCA)**
+
+#### **1. Introdução à Análise de Componentes Principais (PCA)**
+
+Aqui está o texto unificado, integrando os contextos de uso com os exemplos correspondentes:
+
+---
+
+**Aplicações da PCA em Ciências Agrárias:**
+
+A Análise de Componentes Principais (PCA) é amplamente utilizada em ciências agrárias para simplificar a interpretação de dados complexos e multidimensionais. Um exemplo disso é na **redução de dimensionalidade em experimentos agrícolas**, onde múltiplas variáveis, como características morfológicas de plantas, podem ser analisadas de maneira mais eficiente. A PCA ajuda a identificar os componentes principais que capturam a maior parte da variação entre as amostras, facilitando a compreensão das relações entre as variáveis.
+
+Na **análise de solo e qualidade ambiental**, a PCA permite identificar padrões em conjuntos de dados complexos, como os relacionados à composição química do solo ou a indicadores de qualidade ambiental. Essa técnica possibilita a categorização de diferentes tipos de solos ou áreas ambientais, fornecendo informações valiosas para o manejo sustentável.
+
+Outra aplicação importante é na **seleção de variedades em melhoramento genético**, onde a PCA é usada para visualizar e agrupar características fenotípicas ou genotípicas. Isso facilita a escolha de variedades com características desejáveis, otimizando o processo de desenvolvimento de novas cultivares.
+
+A PCA também é útil na **análise de dados climáticos**, ajudando a resumir grandes conjuntos de dados e a identificar as variáveis climáticas mais relevantes que afetam o crescimento das culturas. Além disso, em **estudos de biodiversidade**, a PCA auxilia na identificação de padrões de distribuição de espécies em relação a fatores ambientais, contribuindo para uma melhor compreensão e conservação da biodiversidade.
+
+
+
+#### **2. Fundamentos Teóricos da PCA**
+
+- **Definição:** PCA é uma técnica estatística usada para transformar um conjunto de observações de variáveis possivelmente correlacionadas em um conjunto de valores de variáveis linearmente não correlacionadas, chamadas de componentes principais.
+
+- **Matrizes e Autovalores:** A PCA envolve a decomposição da matriz de covariância (ou correlação) dos dados para extrair autovalores e autovetores. Esses autovetores representam as direções dos componentes principais, e os autovalores indicam a variância explicada por cada componente.
+
+- **Componentes Principais:**
+  - **Primeiro Componente Principal:** Captura a maior variabilidade possível nos dados, representando a direção de máxima variação.
+  - **Componentes Subsequentes:** Cada componente subsequente captura a maior variabilidade possível, sujeita à condição de ser ortogonal aos componentes anteriores.
+
+- **Propriedades:**
+  - **Ortogonalidade:** Os componentes principais são ortogonais entre si, garantindo que não exista correlação entre eles.
+  - **Maximização da Variância:** Cada componente principal é definido de forma a maximizar a variância explicada pelos dados.
+
+#### **3. Explicação de Autovalores e Autovetores**
+
+- **Autovalor (Eigenvalue):**
+  - Um autovalor representa a quantidade de variância capturada por cada componente principal. Em outras palavras, é um número associado a um vetor (autovetor) que indica a “importância” ou o “peso” daquele vetor na descrição da variação dos dados.
+  - Na PCA, os autovalores estão relacionados à matriz de covariância (ou correlação) dos dados. A PCA transforma as variáveis originais em componentes principais de forma que o primeiro componente principal (com o maior autovalor) captura a maior quantidade de variância nos dados, o segundo componente captura a maior quantidade de variância restante, e assim por diante.
+
+- **Autovetor (Eigenvector):**
+  - Um autovetor é uma direção ou vetor que define o caminho ao longo do qual os dados variam mais fortemente. Na PCA, cada autovetor é um vetor unitário (de comprimento 1) que define uma nova dimensão no espaço transformado.
+  - Os autovetores na PCA correspondem às direções dos componentes principais. Eles apontam para as direções de maior variação nos dados e são ortogonais entre si, garantindo que cada componente principal seja independente dos outros.
+
+- **Como os Autovalores e Autovetores Funcionam na PCA:**
+  - A matriz de covariância (ou correlação) dos dados é decomposta em autovalores e autovetores. Os autovalores indicam a quantidade de variância explicada por cada componente, enquanto os autovetores definem as direções (componentes principais) que capturam essa variância.
+
+- **Exemplo Intuitivo:**
+  - Visualize um conjunto de dados em 2D. O autovetor associado ao maior autovalor (primeiro componente principal) apontará na direção de maior variação dos dados. O segundo autovetor, ortogonal ao primeiro, capturará a segunda maior variação.
+  
+```{r, echo=FALSE}
+library(ggplot2)
+# Configurar o ambiente
+set.seed(42)
+
+# Gerar dados aleatórios em 2D
+data <- matrix(rnorm(400, m=0, s= 2), ncol = 2)
+data <- data %*% matrix(c(3, 2, 2, 1), ncol = 2)
+
+# Calcular a média dos dados
+mean_data <- colMeans(data)
+
+# Centralizar os dados
+data_centered <- scale(data, center = TRUE, scale = FALSE)
+
+# Calcular a matriz de covariância
+cov_matrix <- cov(data_centered)
+
+# Calcular autovalores e autovetores
+eig <- eigen(cov_matrix)
+eigvals <- eig$values
+eigvecs <- eig$vectors
+
+# Aumentar a variância do segundo autovetor
+eigvals[2] <- eigvals[2] * 3  # Aumentar o segundo autovalor
+
+# Normalizar autovetores para melhorar a visualização
+scale_factor <- 5
+eigvecs_scaled <- eigvecs %*% diag(sqrt(eigvals)) * scale_factor
+
+# Criar um dataframe para o ggplot
+df <- as.data.frame(data)
+colnames(df) <- c("X1", "X2")
+
+# Dataframe para autovetores
+eigvecs_df <- data.frame(
+  x0 = mean_data[1], y0 = mean_data[2],
+  x1 = mean_data[1] + eigvecs_scaled[1, 1],
+  y1 = mean_data[2] + eigvecs_scaled[2, 1],
+  x2 = mean_data[1] + eigvecs_scaled[1, 2],
+  y2 = mean_data[2] + eigvecs_scaled[2, 2]
+)
+
+# Plot usando ggplot2
+ggplot(df, aes(x = X1, y = X2)) +
+  geom_point(color = rgb(0.2, 0.4, 0.6, 0.5), size = 2) +
+  geom_segment(data = eigvecs_df, aes(x = x0, y = y0, xend = x1, yend = y1),
+               arrow = arrow(length = unit(0.3, "cm")), color = "red", linewidth = 1.5) +
+  geom_segment(data = eigvecs_df, aes(x = x0, y = y0, xend = x2, yend = y2),
+               arrow = arrow(length = unit(0.3, "cm")), color = "blue", linewidth =  1.5) +
+  labs(title = "Exemplo Intuitivo de PCA: Autovalores e Autovetores",
+       x = "X1", y = "X2") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))  +
+  annotate("text", x = eigvecs_df$x1, y = eigvecs_df$y1, label = "Autovetor 1", color = "red", vjust = -1, hjust = -0.5) +
+  annotate("text", x = eigvecs_df$x2, y = eigvecs_df$y2, label = "Autovetor 2", color = "blue", vjust = 1)
+
+
+```
+  
+
+#### **4. Principais Resultados e Suas Interpretações**
+
+- **Proporção da Variância Explicada:**
+  - Cada componente principal explica uma fração da variância total dos dados. Essa proporção é usada para decidir quantos componentes principais são necessários para representar os dados de forma adequada.
+
+- **Gráfico Scree:**
+  - O gráfico Scree mostra a variância explicada por cada componente principal e é utilizado para identificar o ponto onde a variância adicional explicada por componentes subsequentes se torna insignificante ("joelho do gráfico").
+
+
+- **Scores (Pontuações):**
+
+   - **Definição:** Representam as coordenadas das **observações** (ou amostras) no novo espaço definido pelas componentes principais.
+   - **Cálculo:** São obtidos projetando os dados originais nas componentes principais. Matemáticamente, os scores são calculados como:
+     
+     
+  $$\text{Scores} = Z \cdot V$$
+     
+     
+     Onde:
+     - $Z$ é a matriz de dados padronizados ($n \times p$).
+     - $V$ é a matriz de autovetores ($p \times k$), onde $k$ é o número de componentes principais selecionadas.
+     
+- **Interpretação:** Cada ponto no biplot que representa uma observação é posicionado de acordo com seus scores, indicando sua posição relativa no espaço das componentes principais.
+
+- **Loadings (Cargas):**
+
+   - **Definição:** Representam as coordenadas das **variáveis** originais no espaço das componentes principais.
+   - **Cálculo:** São derivados dos autovetores e autovalores da decomposição PCA. A carga para a $j$-ésima variável na $k$-ésima componente principal é geralmente calculada como:
+    
+    
+$$\text{Loading}_{jk} = \text{Autovetor}_{jk} \times \sqrt{\text{Autovalor}_k}$$
+     
+     
+   - **Interpretação:** As cargas indicam como cada variável contribui para as componentes principais. No biplot, as variáveis são representadas como vetores (setas) cuja direção e magnitude refletem sua relação com as componentes principais.
+
+
+---
+
+### **Intervalo**
+
+---
+
+### **Parte 2: Aplicação Prática com R**
+
+#### **1. Preparação do Ambiente no R Colab**
+
+- **Introdução ao R Colab:**
+
+O Google Colab é uma ferramenta gratuita oferecida pelo Google que permite a execução de código diretamente no navegador, sem a necessidade de instalação de software ou configuração de ambiente. Ele é especialmente útil para trabalhar com a linguagem R e Python, permitindo que você escreva e execute scripts de forma colaborativa, salve seus projetos na nuvem e compartilhe facilmente com outras pessoas. Além disso, o Colab oferece acesso a recursos de computação em nuvem, facilitando o trabalho com grandes volumes de dados e a realização de análises complexas sem sobrecarregar o seu computador.
+ 
+Para acessar o Google Colab clique [aqui](https://colab.research.google.com/#create=true&language=r).
+
+
+
+```{r, messages=F}
+# Instalar pacotes necessários
+#install.packages("factoextra")
+#install.packages("ggplot2")
+#install.packages("cluster")
+library(factoextra)
+library(ggplot2)
+library(cluster)
+library(corrplot)
+```
+
+#### **2. Exemplo 1: Dataset Iris**
+
+- **Carregamento e Exploração Inicial dos Dados:**
+
+```{r}
+# Carregar o dataset
+data(iris)
+# Visualizar as primeiras linhas
+head(iris)
+```
+
+```{r}
+# Resumo estatístico
+summary(iris)
+```
+
+- **Aplicação da PCA:**
+
+```{r}
+# Aplicar PCA, ignorando a coluna de espécies
+pca_iris <- prcomp(iris[, 1:4], center = T, scale. = T) #centralizar proximo ao eixo -  padronização dos dados)
+```
+
+- **Visualização e Interpretação dos Resultados:**
+
+**Autovalores:**
+
+Os autovalores ou *eigenvalues* medem o quanto da variação foi captada por cada componente principal. Eles são maiores para os primeiros componentes em relação aos subsequentes. Ou seja, o primeiro componente corresponde ao sentido (direção) com a maior quantidade de variação captada.
+
+Se deve examinar os autovalores afim de determinar o numero de componentes a serem considerados. Os autovalores e a proporção da variância (informação) captada pelo Componente principal (CP) podem ser extraídos através da função `get_eigenvalue()` do pacote `factoextra`.
+
+
+```{r}
+#autovalores
+eig.val <- get_eigenvalue(pca_iris)
+eig.val
+```
+
+E podem ser vizualizados pelo gráfico *Scree plot* usando a função `fviz_eig()`.
+
+```{r}
+# Gráfico Scree para determinar o número de componentes a reter
+scree = fviz_eig(pca_iris, addlabels = TRUE)
+scree
+```
+
+```{r}
+# Configurando os rótulos (labels) do gráfico
+ggpubr::ggpar(scree,
+              title = "",
+              subtitle = "",
+              caption = "",
+              xlab = "Dimensões", ylab = "Percentual da variância explicada (%)")
+```
+
+
+Os dois primeiros componentes (dimensões) acumulam aprox. $95,8\%$ da variação dos dados e são, portanto, suficientes para representa-los.
+
+**Loadings ou Coordenadas das variáveis:**
+
+
+Além dos autovalores, existem outros dois resultados muito relevantes: `var$coord` e `var$cos2`. O primeiro representa as coordenadas das variáveis para criar o gráfico de de dos CPs e o segundo representa a qualidade da representação de cada variável no mapa de fatores. Ele é calculado pelo quadrado das coordenadas `var.cos2 = var.coord * var.coord`. Para melhor interpretação `var$contrib` contém as contribuições (%) das variáveis (var) para os CPs.
+
+
+
+Para extrair estes valores vamos usar o seguinte a função `get_pca_var()`:
+
+```{r}
+var <- get_pca_var(pca_iris)
+```
+
+Agora podemos ver as coordenadas de cada variável nas quatro dimensões (CPs):
+
+```{r}
+print(var$coord)
+```
+
+e visualizar graficamente:
+
+```{r}
+cor_cir = fviz_pca_var(pca_iris, repel = TRUE)
+
+ggpubr::ggpar(cor_cir,
+              title = "Gráfico de Correlação",
+              ggtheme= theme_minimal(),
+              xlab = "CP1 (73%)", ylab = "CP2 (22,9%)"
+            
+)
+```
+
+No biplot, as coordenadas das variáveis são geralmente plotadas como vetores (setas) que partem da origem. O comprimento e a direção das setas indicam a contribuição e a correlação das variáveis com os componentes principais plotados.
+
+
+A direção da seta indica o sentido da variável em relação aos componentes principais.
+O ângulo entre as setas de diferentes variáveis indica o grau de correlação entre essas variáveis (setas próximas indicam correlação positiva, setas perpendiculares indicam correlação próxima de zero).
+
+Variáveis cujos vetores apontam para o mesmo lado são mais correlacionadas entre si e quanto maior a seta (vetor) maior o peso ou qualidade da representação desta para o CP.
+
+Como dito, os valores da qualidade da representação são simplesmente as coordenadas elevadas ao quadrado, que no R visualizamos desta forma:
+
+```{r}
+print(var$cos2)
+```
+
+E graficamente:
+
+```{r, message=FALSE}
+corrplot(var$cos2, is.corr = FALSE)
+```
+Veja que a qualidade de representação de cada variável esta de acordo com o tamanho da seta das coordenadas.
+
+**Contribuição das variáveis aos CPs.**
+
+A contribuição das variáveis aos PCs é cmputada em porcentagem. Variáveis que são correlacionadas com CP1 (Dim.1) e CP2 (Dim.2) são as mais importantes para explicar a varibilidade do conjunto de dados. O valor da contribuição é observado a seguir:
+
+```{r}
+print(var$contrib)
+```
+
+Para vizualizaramos a contribuição das variáveis ao CP 1 usamos o seguinte gráfico:
+
+```{r}
+dim1 = fviz_contrib(pca_iris, choice = "var", axes = 1)
+
+ggpubr::ggpar(dim1,
+              title = "Contribuição das variáveis para o CP 1",
+              ylab = "Contribuição (%)",
+              xlab = "Variáveis",
+              ggtheme= theme_minimal()
+)
+```
+
+Mas o mais importante é saber a Contribuição das variaveis para CP1 + CP2:
+
+```{r}
+
+dim12 = fviz_contrib(pca_iris, choice = "var", axes = 1:2)
+
+ggpubr::ggpar(dim12,
+              title = "Contribuição das variáveis para a soma dos componentes 1 e 2",
+              xlab = "Variáveis", ylab = "Contribuição (%)",
+              ggtheme = theme_minimal()
+)
+```
+
+Agora temos dois gráficos que são muito utilizados para representar os dados e checar por agrupamentos e realizar insights úteis: o gráfico da contribuição dos indivíduos nos CPs e o gráfico Biplot. Para isso usamos as funções `fviz_pca_ind()` e `fviz_pca_biplot`, respectivamente: 
+
+```{r}
+# Gráfico de indivíduos
+fviz_pca_ind(pca_iris, geom.ind = "point", 
+                col.ind = "cos2", 
+                addEllipses = F, label = "var", 
+                col.var = "black")
+```
+
+Este grafico não é muito util para esta analise, uma vez que os indivíduos são meras repetições e não tem significado prático no estudo.
+
+E o gráfico Biplot:
+
+```{r}
+# Gráfico de agrupamento (Biplot)
+fviz_pca_biplot(pca_iris, geom.ind = "point", repel = TRUE,
+                col.ind = iris$Species, palette = "jco", 
+                addEllipses = TRUE, label = "var", 
+                col.var = "black")
+```
+
+Interpretação do ultimo gráfico:
+
+- A separação clara das diferentes espécies ao longo do CP1 e do CP2 sugere que essas dimensões são eficazes para discriminar entre as espécies.
+
+
+- As observações (flores) que estão mais próximas das setas das variáveis são aquelas que têm valores mais altos para essas variáveis. Por exemplo, as flores da espécie setosa estão mais próximas da seta que representa "Sepal Width", indicando que essa espécie tende a ter uma largura de sépala maior.
+
+
+- As elipses em torno dos pontos de dados para cada espécie indicam a área dentro da qual a maioria das observações daquela espécie cai, fornecendo uma ideia da variabilidade dentro de cada grupo.
+
+O gráfico sugere que as diferentes espécies de iris podem ser separadas principalmente ao longo do CP1, que está fortemente associado ao comprimento da pétala e largura da pétala. CP2 parece capturar variações mais associadas à largura da sépala. A PCA foi eficaz em reduzir a dimensionalidade dos dados enquanto preserva a maior parte da variação que distingue as espécies de flores.
+
+
+#### **3. Exemplo 2: Dataset USArrests**
+
+- **Carregamento e Exploração Inicial dos Dados:**
+
+```{r}
+# Carregar o dataset
+data(USArrests)
+# Visualizar as primeiras linhas
+head(USArrests)
+# Resumo estatístico
+summary(USArrests)
+```
+
+- **Aplicação da PCA:**
+
+```{r}
+# Aplicar PCA
+pca_usarrests <- prcomp(USArrests, center = T, scale. = T)
+```
+
+- **Visualização e Interpretação dos Resultados:**
+
+```{r}
+# Gráfico Scree
+fviz_eig(pca_usarrests, addlabels = TRUE)
+```
+
+```{r}
+cor_cir = fviz_pca_var(pca_usarrests, repel = TRUE)
+
+ggpubr::ggpar(cor_cir,
+              title = "Gráfico de Correlação",
+              ggtheme= theme_minimal(),
+              xlab = "CP1 (62%)", ylab = "CP2 (24,7%)"
+            
+)
+```
+
+```{r}
+corrplot(var$cos2, is.corr = FALSE)
+```
+
+```{r}
+dim12 = fviz_contrib(pca_usarrests, choice = "var", axes = 1:2)
+
+ggpubr::ggpar(dim12,
+              title = "Contribuição das variáveis para a soma dos componentes 1 e 2",
+              xlab = "Variáveis", ylab = "Contribuição (%)",
+              ggtheme = theme_minimal()
+)
+```
+
+
+
+```{r}
+# Visualização dos indivíduos no plano dos dois primeiros componentes principais
+fviz_pca_ind(pca_usarrests, col.ind = "cos2", 
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE )+
+  labs(title = "", x = "CP1 (62%)", y = "CP2 (24,7%)") +
+  theme_minimal()
+```
+
+```{r}
+# Gráfico de agrupamento (Biplot)
+fviz_pca_biplot(pca_usarrests, geom.ind = "point", repel = TRUE,
+                col.ind = "cos2", gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+                label = "var", col.var = "black") +
+  labs(title = "", x = "CP1 (62%)", y = "CP2 (24,7%)") +
+  theme_minimal()
+```
+
+```{r}
+fviz_pca_biplot(pca_usarrests, repel = TRUE,
+                col.var = "#2E9FDF", # cor das variáveis
+                col.ind = "#696969",# cor dos indivíduos
+                ) +
+  labs(title = "", x = "CP1 (62%)", y = "CP2 (24,7%)") +
+  theme_minimal()
+```
+
+Iterpretação do gráfico:
+
+
+Eixos do Gráfico:
+
+- **CP1 (Componente Principal 1)**: Explica 62% da variabilidade total dos dados. Este eixo está fortemente associado às variáveis relacionadas a crimes violentos, como **Murder (Homicídio)** e **Assault (Agressão)**. Estados que estão mais à esquerda ao longo deste eixo tendem a ter índices mais altos desses crimes.
+- **CP2 (Componente Principal 2)**: Explica 24,7% da variabilidade total dos dados. Este eixo está mais relacionado à variável **UrbanPop (População Urbana)**, diferenciando os estados com base na densidade populacional urbana.
+
+Interpretação dos Estados (com todos os quadrantes):
+
+- Quadrante Superior Direito: Inclui estados como **Massachusetts**, **Rhode Island**, e **Connecticut**, que possuem alta densidade populacional urbana (UrbanPop) e baixas taxas de crimes violentos (Murder, Assault).
+
+- Quadrante Superior Esquerdo: Inclui estados como **California** e **Nevada**, que têm uma alta população urbana, mas se separam em relação às taxas de crimes violentos, que não são tão elevadas quanto nos estados do quadrante inferior esquerdo.
+
+- Quadrante Inferior Esquerdo: Inclui estados como **Mississippi**, **North Carolina**, e **South Carolina**, que estão associados a altas taxas de crimes violentos (Murder, Assault) e têm uma população urbana menor.
+
+- Quadrante Inferior Direito: Inclui estados como **West Virginia** e **Vermont**. Esses estados têm baixa densidade populacional urbana (UrbanPop) e também baixas taxas de crimes violentos. Eles estão posicionados de forma oposta aos estados no quadrante superior esquerdo, indicando um perfil de segurança mais elevado e urbanização menor.
+
+Interpretação das Variáveis:
+
+- **UrbanPop (População Urbana)**: Está mais alinhada com CP2, sugerindo que a densidade populacional urbana dos estados tem uma variação independente das taxas de crimes violentos.
+- **Murder** e **Assault**: Estão fortemente associadas com CP1, mostrando que estados com altas taxas de homicídios tendem também a ter altas taxas de agressão.
+- **Rape**: Embora esteja representada no gráfico, seu impacto específico se alinha mais com uma combinação de CP1 e CP2, refletindo uma complexidade nas taxas de estupro em relação às outras variáveis.
+
+---
+
+Neste conjunto de dados, não temos um agrupamento pré-definido, como é o caso do conjunto de dados iris. No entanto, podemos explorar a similaridade entre os indivíduos (neste caso, os estados) e tentar agrupá-los em grupos semelhantes usando uma técnica de agrupamento hierárquico. Para isso, vamos criar um dendrograma utilizando a função fviz_dend no R.
+ 
+```{r, message = F, warning=FALSE}
+# Calculando a matriz de distâncias entre os estados com base nas coordenadas da PCA
+res.dist_us <- dist(pca_usarrests$x) 
+
+# Realizando o agrupamento hierárquico com base na matriz de distâncias
+res.hc_us <- hclust(res.dist_us) 
+
+# Visualizando o dendrograma com 4 grupos
+fviz_dend(res.hc_us, k = 4, palette = "jco", 
+          rect = TRUE, show_labels = TRUE) +
+  labs(title = "Dendrograma de agrupamento", x = "", y = "Distância") +
+  theme_minimal()
+
+```
+
+
+#### Sugestão de materiais de consulta
+
+Aqui estão algumas leituras recomendadas sobre Análise de Componentes Principais (PCA), com links para materiais online que você pode explorar:
+
+1. Site do e-book: Principal Component Methods in R: Practical Guide
+
+- Link: [sthda](http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/112-pca-principal-component-analysis-essentials/#graph-of-variables).
+
+2. Statquest (canal de Joshua Starmer no You tube)
+- Link: [Statquest](https://www.youtube.com/@statquest).
+
+
+---
+
